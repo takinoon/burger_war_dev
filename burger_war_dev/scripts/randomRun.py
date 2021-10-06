@@ -21,24 +21,39 @@ class RandomBot():
         self.name = bot_name
         # velocity publisher
         self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
+        # count variable
+        self.value = 0
 
     def calcTwist(self):
-        value = random.randint(1,1000)
-        if value < 250:
+        self.value += 1 
+        if self.value < 8:
             x = 0.2
             th = 0
-        elif value < 500:
-            x = -0.2
-            th = 0
-        elif value < 750:
+        elif self.value < 11:
             x = 0
             th = 1
-        elif value < 1000:
+        elif self.value < 13:
+            x = 0.2
+            th = 0
+        elif self.value < 16:
             x = 0
             th = -1
-        else:
+        elif self.value < 19:
+            x = 0.2
+            th = 0
+        elif self.value < 30:
+            if self.value % 6 < 3:
+                x = 0
+                th = 0.2
+            else:
+                x = 0
+                th = -0.2
+        elif self.value == 30:
             x = 0
             th = 0
+            self.value = 0
+            
+
         twist = Twist()
         twist.linear.x = x; twist.linear.y = 0; twist.linear.z = 0
         twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = th
