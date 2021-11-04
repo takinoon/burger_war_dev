@@ -92,15 +92,15 @@ class NaviBot():
         twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0
         self.vel_pub.publish(twist)
         r = rospy.Rate(5) # change speed 5fps
-        while self.cnt_around < 6:
+        while self.cnt_around < 8:
             self.vel_pub.publish(twist)
             self.cnt_around += 1
             print(self.cnt_around)
             r.sleep()
         self.cnt_around = 0
         twist.linear.x = 0
-        twist.angular.z = 0.2
-        while self.cnt_around < 6:
+        twist.angular.z = 0.8
+        while self.cnt_around < 5:
             self.vel_pub.publish(twist)
             self.cnt_around += 1
             print(self.cnt_around)
@@ -108,7 +108,7 @@ class NaviBot():
         self.cnt_around = 0
         twist.linear.x = 0.2
         twist.angular.z = 0
-        while self.cnt_around < 6:
+        while self.cnt_around < 8:
             self.vel_pub.publish(twist)
             self.cnt_around += 1
             print(self.cnt_around)
@@ -130,19 +130,19 @@ class NaviBot():
             self.setGoal(-1,0,pi/4)
             self.setGoal(-1,0,7*pi/4)
             self.setGoal(-0.85,-0.5,5*pi/3)
-            self.go_straight()
+            #self.go_straight()
             self.setGoal(0,-1,3*pi/4)
             self.setGoal(0,-1,pi/4)
             self.setGoal(0.5,-0.85,pi/6)
-            self.go_straight()
+            #self.go_straight()
             self.setGoal(1,0,5*pi/4)
             self.setGoal(1,0,3*pi/4)
             self.setGoal(0.85,0.5,2*pi/3)
-            self.go_straight()
+            #self.go_straight()
             self.setGoal(0,1,7*pi/4)
             self.setGoal(0,1,5*pi/4)
             self.setGoal(-0.5,0.85,7*pi/6)
-            self.go_straight()
+            #self.go_straight()
 
             #内回り周回
             # self.setGoal(-1,0,pi/4)
