@@ -54,7 +54,7 @@ pi = math.pi
 class NaviBot():
     def __init__(self):
         
-        self.cnt_around = 0
+        self.cnt_around = True
         # velocity publisher
         self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
         self.client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
@@ -86,59 +86,21 @@ class NaviBot():
         else:
             return self.client.get_result()        
 
-    def go_straight(self):
-        twist = Twist()
-        twist.linear.x = 0.2; twist.linear.y = 0; twist.linear.z = 0
-        twist.angular.x = 0; twist.angular.y = 0; twist.angular.z = 0
-        self.vel_pub.publish(twist)
-        r = rospy.Rate(5) # change speed 5fps
-        while self.cnt_around < 8:
-            self.vel_pub.publish(twist)
-            self.cnt_around += 1
-            print(self.cnt_around)
-            r.sleep()
-        self.cnt_around = 0
-        twist.linear.x = 0
-        twist.angular.z = 0.8
-        while self.cnt_around < 5:
-            self.vel_pub.publish(twist)
-            self.cnt_around += 1
-            print(self.cnt_around)
-            r.sleep()
-        self.cnt_around = 0
-        twist.linear.x = 0.2
-        twist.angular.z = 0
-        while self.cnt_around < 8:
-            self.vel_pub.publish(twist)
-            self.cnt_around += 1
-            print(self.cnt_around)
-            r.sleep()
-        self.cnt_around = 0
-        twist.linear.x = 0
-        twist.angular.z = 0
-        self.vel_pub.publish(twist)
-
-
-
-
-
-
     def strategy(self):
         r = rospy.Rate(5) # change speed 5fps
 
         while not rospy.is_shutdown():
             self.setGoal(-1,0,pi/4)
             self.setGoal(-1,0,7*pi/4)
-            self.setGoal(-0.85,-0.5,5*pi/3)
-            #self.go_straight()
+            if self.cnt_around:
+                self.setGoal(-0.85,-0.5,5*pi/3)
+            else
             self.setGoal(0,-1,3*pi/4)
             self.setGoal(0,-1,pi/4)
             self.setGoal(0.5,-0.85,pi/6)
-            #self.go_straight()
             self.setGoal(1,0,5*pi/4)
             self.setGoal(1,0,3*pi/4)
             self.setGoal(0.85,0.5,2*pi/3)
-            #self.go_straight()
             self.setGoal(0,1,7*pi/4)
             self.setGoal(0,1,5*pi/4)
             self.setGoal(-0.5,0.85,7*pi/6)

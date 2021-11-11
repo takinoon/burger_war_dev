@@ -6,12 +6,15 @@ import math
 import numpy as np
 pi = math.pi
 from geometry_msgs.msg import Twist
+from actionlib import SimpleActionClient, GoalStatus
 
 import tf
 
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import actionlib_msgs
+from visualization_msgs.msg import Marker
+
 
 # Ref: https://hotblackrobotics.github.io/en/blog/2018/01/29/action-client-py/
 
@@ -38,34 +41,35 @@ def get_goals(my_color, rotation="CW"):
          
     # 12x3 (x,y,yaw) 
     goal_xyyaw = np.array([ 
-            [symbol * -0.8  , symbol * 0     , np.mod(0      + th ,2*pi) ], # (1） 
-            [symbol * -0.8  , symbol * -0.2  ,-np.mod(-pi/4  + th ,2*pi) ], 
-            [symbol * -0.8  , symbol * 0     , np.mod(pi/2   + th ,2*pi) ],
-            [symbol * -0.8  , symbol *  0.2  , np.mod(pi/3   + th ,2*pi) ],
-            [symbol * -0.5  , symbol *  0.2  , np.mod(0      + th ,2*pi) ],
-            [symbol * 0     , symbol * 0.4   , np.mod(pi*4/5 + th ,2*pi) ], # (2)
-            [symbol * 0     , symbol * 0.4   , np.mod(-pi/2  + th ,2*pi) ],
-            [symbol * 0.2   , symbol * 0.4   , np.mod( 0     + th ,2*pi) ],
-            [symbol * 0.2   , symbol * 0.4   ,-np.mod(pi/3   + th ,2*pi) ],
-            [symbol * 0.5   , symbol *   0   , np.mod(pi     + th ,2*pi) ], #（3）
-            [symbol * 0.5   , symbol *   0   , np.mod(-pi/2  + th ,2*pi) ],
-            [symbol * 0.2   , symbol * -0.4  , np.mod( pi    + th ,2*pi) ],
-            [symbol * 0.2   , symbol * -0.4  , np.mod(-pi/3  + th ,2*pi) ],
-            [symbol * 0     , symbol * -0.4  , np.mod( 0     + th ,2*pi) ], # (4)
-            [symbol * 0     , symbol * -0.4  , np.mod(-pi*4/5+ th ,2*pi) ],
-            [symbol * 0     , symbol * -0.4  , np.mod( pi    + th ,2*pi) ],
-            [symbol * -0.5  , symbol * 0     , np.mod( pi    + th ,2*pi) ], # (5) 
-            [symbol * -1.40 , symbol * 0     , np.mod( 0     + th ,2*pi) ]
-        ])     
+            [symbol * -1  , symbol * 0     , np.mod(pi/4 + th ,2*pi) ],
+            [symbol * -1  , symbol * 0  , np.mod(pi*7/4 + th ,2*pi) ], 
+            [symbol * -0.9  , symbol * -0.5     , np.mod(pi*5/3 + th ,2*pi) ],
+            [symbol * 0  , symbol *  -1  , np.mod(pi*3/4 + th ,2*pi) ],
+            [symbol * -0  , symbol *  -1  , np.mod(pi/4 + th ,2*pi) ],
+            [symbol * 0.5     , symbol * -0.9   , np.mod(pi/6 + th ,2*pi) ], 
+            [symbol * 1     , symbol * 0   , np.mod(pi*5/4  + th ,2*pi) ],
+            [symbol * 1   , symbol * 0   , np.mod( pi*3/4     + th ,2*pi) ],
+            [symbol * 0.9   , symbol * 0.5   ,np.mod(pi*2/3   + th ,2*pi) ],
+            [symbol * 0   , symbol *   1   , np.mod(pi*7/4     + th ,2*pi) ], 
+            [symbol * 0   , symbol *   1   , np.mod(pi*5/4  + th ,2*pi) ],
+            [symbol * -0.5   , symbol * 0.9  , np.mod( pi*7/6    + th ,2*pi) ],
+        ])    
     return goal_xyyaw 
  
- 
+def num2mvstate(i):
+    return ["PENDING", "ACTIVE", "RECALLED", "REJECTED", "PREEMPTED", "ABORTED", "SUCCEEDED", "LOST"][i]
+
+
 class NaviBot(): 
     def __init__(self): 
         # velocity publisher 
         self.vel_pub  = rospy.Publisher('cmd_vel', Twist,queue_size=1)
         self.client   = actionlib.SimpleActionClient('move_base',MoveBaseAction)
         self.my_color = rospy.get_param('~rside')
+        self.goalcounter = 0
+        self.goalcounter_prev = -1
+        self.goals = get_goals(self.my_color)
+        self.is_second_lap = False
 
     def setGoal(self,x,y,yaw):
         self.client.wait_for_server()
@@ -85,24 +89,89 @@ class NaviBot():
         goal.target_pose.pose.orientation.z = q[2]
         goal.target_pose.pose.orientation.w = q[3]
 
-        self.client.send_goal(goal)
-        wait = self.client.wait_for_result()
-        if not wait:
-            rospy.logerr("Action server not available!")
-            rospy.signal_shutdown("Action server not available!")
-        else:
-            return self.client.get_result()        
 
+        
+        def active_cb():
+            # rospy.loginfo("active_cb. Goal pose is now being processed by the Action Server...")
+            return
+
+        def feedback_cb( feedback):
+            #To print current pose at each feedback:
+            #rospy.loginfo("Feedback for goal "+str(self.goal_cnt)+": "+str(feedback))
+            # rospy.loginfo("feedback_cb. Feedback for goal pose received{}".format(feedback))
+            return
+
+        def done_cb(status, result):
+            if status is not GoalStatus.PREEMPTED:
+                self.goalcounter += 1
+                if self.goalcounter == len(self.goals):
+                    self.is_second_lap = True
+                self.goalcounter %= len(self.goals)
+
+            rospy.loginfo("done_cb. status:{} result:{}".format(num2mvstate(status), result))
+
+        self.client.send_goal(goal, done_cb=done_cb, active_cb=active_cb, feedback_cb=feedback_cb) 
+        return
 
     def strategy(self):
         r = rospy.Rate(5) # change speed 5fps
         goal_xyyaw = get_goals(self.my_color)
         # import pdb; pdb.set_trace()
-        
-        for ii in range(goal_xyyaw.shape[0]):
-            goal_tmp =goal_xyyaw[ii,:]
-            print('self.setGoal(' +str(goal_tmp) + ')')
-            self.setGoal(goal_tmp[0],goal_tmp[1],goal_tmp[2])
+        cnt = 0
+        enemy_dist = 1.0
+        is_patrol_mode = True
+        is_patrol_mode_prev = False
+        is_enemy_detected =  False
+
+        self.setGoal(
+            self.goals[0][0], self.goals[0][1], self.goals[0][2])
+
+        while not rospy.is_shutdown():
+            r.sleep()
+
+            if cnt < 50:
+                enemy_dist = 0.9
+            elif cnt < 60:
+                enemy_dist = 0.3
+                is_enemy_detected = True
+            elif cnt >= 60:
+                cnt = 0
+
+            cnt += 1  
+            
+            detect_inner = 0.5
+            detect_outer = 0.6
+
+            if not is_enemy_detected:
+                is_patrol_mode = True
+            elif is_patrol_mode and detect_inner > enemy_dist:
+                is_patrol_mode = False
+            elif not is_patrol_mode and detect_outer < enemy_dist:
+                is_patrol_mode = True
+
+            # 移動実施
+            if is_patrol_mode and (not is_patrol_mode_prev or (self.goalcounter is not self.goalcounter_prev)):
+                # 新たに巡回モードに切り替わった瞬間及びゴール座標が変わった時
+                # goalcounterのゴール座標をセット
+                self.setGoal(self.goals[self.goalcounter][0], self.goals[self.goalcounter][1], self.goals[self.goalcounter][2])
+                print("切り替わるタイミング")
+                self.goalcounter_prev = self.goalcounter
+            elif is_patrol_mode:
+                # 巡回モード最中。CBが来るまで何もしない。
+                print("巡回モード")
+                #pass
+            else : 
+                # 敵の方向を向くモード
+                print("ここから敵向くモード")
+                self.client.cancel_all_goals()
+                twist = Twist()
+                twist.angular.z = pi
+                self.vel_pub.publish(twist)
+            is_patrol_mode_prev = is_patrol_mode
+
+            print(is_patrol_mode)
+
+            
 
         print('END')        
 
