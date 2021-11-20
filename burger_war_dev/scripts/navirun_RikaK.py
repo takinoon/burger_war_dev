@@ -111,11 +111,11 @@ class NaviBot():
             rospy.loginfo("done_cb. status:{} result:{}".format(num2mvstate(status), result))
 
         self.client.send_goal(goal, done_cb=done_cb, active_cb=active_cb, feedback_cb=feedback_cb) 
+
         return
 
     def strategy(self):
         r = rospy.Rate(5) # change speed 5fps
-        goal_xyyaw = get_goals(self.my_color)
         # import pdb; pdb.set_trace()
         cnt = 0
         enemy_dist = 1.0
@@ -123,8 +123,7 @@ class NaviBot():
         is_patrol_mode_prev = False
         is_enemy_detected =  False
 
-        self.setGoal(
-            self.goals[0][0], self.goals[0][1], self.goals[0][2])
+        self.setGoal(self.goals[0][0], self.goals[0][1], self.goals[0][2])
 
         while not rospy.is_shutdown():
             r.sleep()
@@ -162,10 +161,10 @@ class NaviBot():
                 #pass
             else : 
                 # 敵の方向を向くモード
-                print("ここから敵向くモード")
+                print("敵向くモード")
                 self.client.cancel_all_goals()
                 twist = Twist()
-                twist.angular.z = pi
+                twist.angular.z = 0
                 self.vel_pub.publish(twist)
             is_patrol_mode_prev = is_patrol_mode
 
