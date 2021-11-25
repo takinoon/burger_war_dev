@@ -48,6 +48,8 @@ target_idx_b = np.array([
     [ 10, 16,  7]
 ])
 
+
+
 # Ref: https://hotblackrobotics.github.io/en/blog/2018/01/29/action-client-py/
 
 # respect is_point_enemy freom team rabbit
@@ -137,7 +139,7 @@ class EnemyDetector:
             #print(len_p1, len_p2, len_p3, len_p4, len_p5)
             return True
 
-def get_goals(my_color = 'r', rotation="CW"):
+def get_goals(my_color, rotation):
     if my_color == 'b':
         symbol = -1
         th     = pi
@@ -147,10 +149,10 @@ def get_goals(my_color = 'r', rotation="CW"):
 
     # rotation = 'CW'  # 回転方向を変える @en
 
-    if rotation == 'CW':
-        symbol_2 = -1
-    else:
-        symbol_2 = 1
+    # if rotation == 'CW':
+    #     symbol_2 = -1
+    # else:
+    #     symbol_2 = 1
 
     #print("get_goals", my_color, symbol, th, symbol_2)
          
@@ -188,7 +190,7 @@ class NaviBot():
         
         self.goalcounter = 0
         self.goalcounter_prev = -1
-        self.goals = get_goals()
+        self.goals = get_goals('r', 'CCW')
         # robot wheel rot 
         self.wheel_rot_r = 0
         self.wheel_rot_l = 0
@@ -200,7 +202,7 @@ class NaviBot():
         self.near_wall_range = 0.2  # [m]
 
         # speed [m/s]
-        self.speed = 0.07
+        self.speed = 0.1
         # self.speed = 0.5
 
         # lidar scan
@@ -230,17 +232,29 @@ class NaviBot():
         self.is_initialized_pose = False
         self.enemy_detector = EnemyDetector()
 
+        self.pre_rotation = 'CCW'
+        self.now_rotation = 'CCW'
+        self.symbol_2 = 1
+
     def getWarState(self):
         resp = requests.get(JUDGE_URL + "/warState")
-        dic = resp.json()
+        self.dic = resp.json()
 
         if self.my_side == "r": # red_bot
-            self.my_score = int(dic["scores"]["r"])
-            self.enemy_score = int(dic["scores"]["b"])
+            self.my_score = int(self.dic["scores"]["r"])
+            self.enemy_score = int(self.dic["scores"]["b"])
         else: # blue_bot
-            self.my_score = int(dic["scores"]["b"])
-            self.enemy_score = int(dic["scores"]["r"])
-        print(dic)
+            self.my_score = int(self.dic["scores"]["b"])
+            self.enemy_score = int(self.dic["scores"]["r"])
+        self.targets = np.array([
+            self.dic["targets"][11]["player"],self.dic["targets"][17]["player"],
+            self.dic["targets"][13]["player"],self.dic["targets"][12]["player"],
+            self.dic["targets"][15]["player"],self.dic["targets"][9]["player"],
+            self.dic["targets"][8]["player"],self.dic["targets"][14]["player"],
+            self.dic["targets"][6]["player"],self.dic["targets"][7]["player"],
+            self.dic["targets"][16]["player"],self.dic["targets"][10]["player"]
+        ])
+
 
         # for zone in range(4):
         #     for target in range(3):
@@ -367,7 +381,7 @@ class NaviBot():
                 th_diff += 2*PI
         new_twist_ang_z = max(-0.5, min((th_diff) * self.k , 0.5))
 
-        if self.enemy_dist > 0.36:
+        if self.enemy_dist > 0.3:
             speed = self.speed
         else:
             speed = -self.speed
@@ -425,14 +439,16 @@ class NaviBot():
 
         def done_cb(status, result):
             if status is not GoalStatus.PREEMPTED:
-                self.goalcounter += 1
+                if self.pre_rotation != self.now_rotation:
+                    self.symbol_2 = self.symbol_2 * (-1)
+                self.goalcounter += self.symbol_2
                 if self.goalcounter == len(self.goals):
                     self.is_second_lap = True
                 self.goalcounter %= len(self.goals)
 
                 # 2周目の場合は、最初の方のマーカーをとばす
-                if self.is_second_lap and (self.goalcounter in [0, 1, 2]):
-                    self.goalcounter = 3
+                # if self.is_second_lap and (self.goalcounter in [0, 1, 2]):
+                #     self.goalcounter = 3
             rospy.loginfo("done_cb. status:{} result:{}".format(num2mvstate(status), result))
 
         self.client.send_goal(goal, done_cb=done_cb, active_cb=active_cb, feedback_cb=feedback_cb)
@@ -460,24 +476,36 @@ class NaviBot():
         
         is_patrol_mode_prev = False
         is_patrol_mode = True
+        detect_cnt = 0
+        start_cnt = 0
+
+        self.setGoal(self.goals[0][0], self.goals[0][1], self.goals[0][2])
 
         while not rospy.is_shutdown():
             r.sleep()
-        
+
+            self.getWarState()
             # モード推定
             # 敵追跡モードと巡回モードの分岐条件判定
             is_patrol_mode = True
-            detect_inner_th = 0.6
-            detect_outer_th = 0.7
+            detect_inner_th = 0.9
+            detect_outer_th = 1.0
             if not self.is_near_enemy:
                 is_patrol_mode = True
+                detect_cnt = 0
             elif self.is_near_enemy and detect_inner_th > self.enemy_dist:
                 is_patrol_mode = False
+                detect_cnt += 1
             elif not is_patrol_mode and detect_outer_th < self.enemy_dist:
                 is_patrol_mode = True
-            
+                detect_cnt = 0
+
             # Debug
             # is_patrol_mode = False
+
+            if start_cnt < 90:
+                is_patrol_mode = True
+                start_cnt += 1
             
             # 移動実施
             if is_patrol_mode and (not is_patrol_mode_prev or (self.goalcounter is not self.goalcounter_prev)):
@@ -486,20 +514,18 @@ class NaviBot():
                 # goalcounterのゴール座標をセット
                 self.setGoal(goal_xyyaw[self.goalcounter][0], goal_xyyaw[self.goalcounter][1], goal_xyyaw[self.goalcounter][2])
                 rospy.loginfo( num2mvstate(self.client.get_state()))
-                self.goalcounter_prev = self.goalcounter
-                self.getWarState()
-            
-            elif is_patrol_mode:
-                # print("巡回するぜ〜")
-                # 巡回モード最中。CBが来るまで何もしない。
-                pass
-            else:
+                self.goalcounter_prev = self.goalcounter              
+            elif detect_cnt > 2 and is_patrol_mode == False:
                 print("Yeah!! Enemy Det!!敵を見るぜ〜")
                 # 敵の方向を向くモード
                 self.client.cancel_all_goals()
                 twist = Twist()
-                twist.angular.z = radians(degrees(self.near_enemy_twist.angular.z))
-                # twist.linear.x  = self.speed
+                if detect_cnt < 20:
+                    twist.angular.z = 1.5*radians(degrees(self.near_enemy_twist.angular.z))
+                    #twist.linear.x  = -0.1
+                else :
+                    twist.angular.z = 1.3*radians(degrees(self.near_enemy_twist.angular.z))
+                    #twist.linear.x  = 0.05
                 self.vel_pub.publish(twist)
                 
                 # import pdb; pdb.set_trace()
@@ -510,8 +536,15 @@ class NaviBot():
                 
                 # self.vel_pub.publish(twist)
                 # pass
+            else :
+                print("巡回するぜ〜")
+                # 巡回モード最中。CBが来るまで何もしない。
+                targetscounter = self.goalcounter // 4
+                if (self.goalcounter %4) != 3 and self.targets[self.goalcounter - targetscounter] == "r":
+                    self.goalcounter += 1
                 
             is_patrol_mode_prev = is_patrol_mode
+            
             '''
             for ii in range(goal_xyyaw.shape[0]):
                 goal_tmp =goal_xyyaw[ii,:]
