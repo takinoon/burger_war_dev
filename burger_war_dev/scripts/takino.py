@@ -231,9 +231,6 @@ class NaviBot():
 
         self.is_initialized_pose = False
         self.enemy_detector = EnemyDetector()
-
-        self.pre_rotation = 'CCW'
-        self.now_rotation = 'CCW'
         self.symbol_2 = 1
 
     def getWarState(self):
@@ -522,20 +519,9 @@ class NaviBot():
                 twist = Twist()
                 if detect_cnt < 20:
                     twist.angular.z = 1.5*radians(degrees(self.near_enemy_twist.angular.z))
-                    #twist.linear.x  = -0.1
                 else :
                     twist.angular.z = 1.3*radians(degrees(self.near_enemy_twist.angular.z))
-                    #twist.linear.x  = 0.05
                 self.vel_pub.publish(twist)
-                
-                # import pdb; pdb.set_trace()
-        
-                # print("POSE TWIST: {}, {}".format(self.pose_twist.linear.x, self.pose_twist.angular.z))
-                # print("ENEMY TWIST: {}, {}".format(self.near_enemy_twist.linear.x, self.near_enemy_twist.angular.z))
-                # print("wall: {}, Enemy: {}, X: {}, Z: {}".format(self.is_near_wall, self.is_near_enemy, twist.linear.x, twist.angular.z))
-                
-                # self.vel_pub.publish(twist)
-                # pass
             else :
                 print("巡回するぜ〜")
                 # 巡回モード最中。CBが来るまで何もしない。

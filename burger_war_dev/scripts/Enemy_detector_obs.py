@@ -30,11 +30,11 @@ class EnemyDetector:
 
             #フィールド内のオブジェクトであればパス
             if self.is_point_emnemy(temp_x, temp_y) == False:
-                print("not det")
+                #print("not det")
                 continue
-            print("det")
-            print(temp_x)
-            print(temp_y)
+            #print("det")
+            #print(temp_x)
+            #print(temp_y)
             #敵の座標をTFでbroadcast
             enemy_frame_name = self.robot_name + '/enemy_' + str(num)
             map_frame_name   = self.robot_name + "/map"
