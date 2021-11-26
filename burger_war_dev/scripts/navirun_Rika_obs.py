@@ -268,7 +268,7 @@ class NaviBot():
                 [symbol * 0   , symbol *   1   , np.mod(pi*5/4  + th ,2*pi) ],
                 [symbol * -0.5   , symbol * 0.9  , np.mod( pi*7/6    + th ,2*pi) ],
             ])
-        idx=0
+        # idx=0
 
         while(True):
             r.sleep()
@@ -289,9 +289,9 @@ class NaviBot():
                 # 新たに巡回モードに切り替わった瞬間及びゴール座標が変わった時
                 # goalcounterのゴール座標をセット
                 #self.setGoal(goal_xyyaw[self.goalcounter][0], goal_xyyaw[self.goalcounter][1], goal_xyyaw[self.goalcounter][2])
-                goal_val0 = goal_xyyaw[idx%len(goal_xyyaw)][0]
-                goal_val1 = goal_xyyaw[idx%len(goal_xyyaw)][1]
-                goal_val2 = goal_xyyaw[idx%len(goal_xyyaw)][2]
+                # goal_val0 = goal_xyyaw[idx%len(goal_xyyaw)][0]
+                # goal_val1 = goal_xyyaw[idx%len(goal_xyyaw)][1]
+                # goal_val2 = goal_xyyaw[idx%len(goal_xyyaw)][2]
                 self.setGoal(goal_xyyaw[self.goalcounter][0], goal_xyyaw[self.goalcounter][1], goal_xyyaw[self.goalcounter][2])
                 #rospy.loginfo( num2mvstate(self.client.get_state()))
                 # self.goalcounter_prev = idx%len(goal_xyyaw)
