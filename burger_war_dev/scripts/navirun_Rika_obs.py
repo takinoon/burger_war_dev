@@ -251,21 +251,21 @@ class NaviBot():
         symbol = 1
         th = 0
         goal_xyyaw = np.array([ 
-                [symbol * -1  , symbol * 0     , np.mod(pi/4 + th ,2*pi) ],
-                [symbol * -1  , symbol * 0     , np.mod(0 + th ,2*pi) ],
-                [symbol * -1  , symbol * 0  , np.mod(pi*7/4 + th ,2*pi) ], 
-                [symbol * -0.9  , symbol * -0.5     , np.mod(pi*5/3 + th ,2*pi) ],
-                [symbol * 0  , symbol *  -1  , np.mod(pi*3/4 + th ,2*pi) ],
-                [symbol * 0  , symbol *  -1  , np.mod(pi/2 + th ,2*pi) ],
-                [symbol * -0  , symbol *  -1  , np.mod(pi/4 + th ,2*pi) ],
-                [symbol * 0.5     , symbol * -0.9   , np.mod(pi/6 + th ,2*pi) ], 
-                [symbol * 1     , symbol * 0   , np.mod(pi*5/4  + th ,2*pi) ],
-                [symbol * 1     , symbol * 0   , np.mod(pi  + th ,2*pi) ],
-                [symbol * 1   , symbol * 0   , np.mod( pi*3/4     + th ,2*pi) ],
-                [symbol * 0.9   , symbol * 0.5   ,np.mod(pi*2/3   + th ,2*pi) ],
-                [symbol * 0   , symbol *   1   , np.mod(pi*7/4     + th ,2*pi) ],
-                [symbol * 0   , symbol *   1   , np.mod(pi*3/2     + th ,2*pi) ], 
-                [symbol * 0   , symbol *   1   , np.mod(pi*5/4  + th ,2*pi) ],
+                [symbol * -0.85  , symbol * 0.5     , np.mod(0 + th ,2*pi) ],
+                [symbol * -0.8  , symbol * 0     , np.mod(0 + th ,2*pi) ],
+                [symbol * -0.85  , symbol * -0.5  , np.mod(0 + th ,2*pi) ], 
+                [symbol * -0.85  , symbol * -0.5     , np.mod(pi*5/3 + th ,2*pi) ],
+                [symbol * 0  , symbol *  -0.8  , np.mod(pi*5/6 + th ,2*pi) ],
+                [symbol * 0  , symbol *  -0.8  , np.mod(pi/2 + th ,2*pi) ],
+                [symbol * 0  , symbol *  -0.8  , np.mod(pi/6 + th ,2*pi) ],
+                [symbol * 0.5     , symbol * -0.85   , np.mod(pi/6 + th ,2*pi) ], 
+                [symbol * 0.8     , symbol * -0.2   , np.mod(pi*5/4  + th ,2*pi) ],
+                [symbol * 0.8     , symbol * 0   , np.mod(pi  + th ,2*pi) ],
+                [symbol * 0.85   , symbol * 0.5   , np.mod( pi    + th ,2*pi) ],
+                [symbol * 0.85   , symbol * 0.5   ,np.mod(pi*2/3   + th ,2*pi) ],
+                [symbol * 0   , symbol *   0.8   , np.mod(pi*11/6     + th ,2*pi) ],
+                [symbol * 0   , symbol *   0.8   , np.mod(pi*3/2     + th ,2*pi) ], 
+                [symbol * 0   , symbol *   0.8   , np.mod(pi*7/6  + th ,2*pi) ],
                 [symbol * -0.5   , symbol * 0.9  , np.mod( pi*7/6    + th ,2*pi) ],
             ])
         # idx=0
@@ -274,8 +274,8 @@ class NaviBot():
             r.sleep()
             self.getWarState()
             is_patrol_mode = True
-            detect_inner_th = 1.0
-            detect_outer_th = 1.1
+            detect_inner_th = 0.8
+            detect_outer_th = 0.7
             if not self.is_enemy_detecting:
                 is_patrol_mode = True
             elif self.is_enemy_detecting and flg and detect_inner_th > self.enemy_dist:
